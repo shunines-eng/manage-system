@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +31,25 @@ public class AuthController {
     private JwtTokenProvider tokenProvider;
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest, HttpSession session) {
         try {
+            // 验证验证码
+            if (loginRequest.getCaptcha() == null || loginRequest.getCaptcha().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("请输入验证码");
+            }
+
+            String sessionCaptcha = (String) session.getAttribute("captcha");
+            if (sessionCaptcha == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("验证码已过期，请刷新");
+            }
+
+            if (!sessionCaptcha.equalsIgnoreCase(loginRequest.getCaptcha().trim())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("验证码错误");
+            }
+
+            // 验证成功后，移除session中的验证码
+            session.removeAttribute("captcha");
+
             // 验证用户名和密码
             User user = userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
 
@@ -107,6 +125,7 @@ public class AuthController {
     public static class LoginRequest {
         private String username;
         private String password;
+        private String captcha;
 
         // Getters and Setters
         public String getUsername() {
@@ -123,6 +142,14 @@ public class AuthController {
 
         public void setPassword(String password) {
             this.password = password;
+        }
+
+        public String getCaptcha() {
+            return captcha;
+        }
+
+        public void setCaptcha(String captcha) {
+            this.captcha = captcha;
         }
     }
 

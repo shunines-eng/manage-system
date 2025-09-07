@@ -22,8 +22,28 @@
             placeholder="请输入密码"
             prefix-icon="el-icon-lock"
             clearable
+            show-password
             @keyup.enter.native="handleLogin"
           ></el-input>
+        </el-form-item>
+        <el-form-item prop="captcha">
+          <div class="captcha-container">
+            <el-input
+              v-model="loginForm.captcha"
+              placeholder="请输入验证码"
+              prefix-icon="el-icon-picture"
+              clearable
+              style="width: 60%"
+              @keyup.enter.native="handleLogin"
+            ></el-input>
+            <img
+              :src="captchaImage"
+              @click="refreshCaptcha"
+              alt="验证码"
+              class="captcha-image"
+              title="点击刷新"
+            />
+          </div>
         </el-form-item>
         <el-form-item class="remember-password">
           <el-checkbox v-model="loginForm.rememberMe">记住我</el-checkbox>
@@ -56,6 +76,7 @@ export default {
       loginForm: {
         username: '',
         password: '',
+        captcha: '',
         rememberMe: false
       },
       rules: {
@@ -66,9 +87,13 @@ export default {
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
           { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+        ],
+        captcha: [
+          { required: true, message: '请输入验证码', trigger: 'blur' }
         ]
       },
-      loading: false
+      loading: false,
+      captchaImage: ''
     }
   },
   created() {
@@ -78,30 +103,59 @@ export default {
       this.loginForm.username = savedUsername
       this.loginForm.rememberMe = true
     }
+    // 加载验证码
+    this.refreshCaptcha()
   },
   methods: {
+    // 刷新验证码
+    refreshCaptcha() {
+      this.$axios.get('/api/captcha/generate').then(response => {
+        this.captchaImage = response.data.image
+      }).catch(error => {
+        console.error('获取验证码失败:', error)
+        this.$message.error('获取验证码失败，请重试')
+      })
+    },
     async handleLogin() {
       this.$refs.loginForm.validate(async (valid) => {
         if (valid) {
           this.loading = true
           try {
-            await this.$store.dispatch('login', {
-              username: this.loginForm.username,
-              password: this.loginForm.password
+            // 先验证验证码
+            const captchaResponse = await this.$axios.post('/api/captcha/validate', {
+              code: this.loginForm.captcha
             })
             
-            // 如果勾选了记住我，保存用户名
-            if (this.loginForm.rememberMe) {
-              localStorage.setItem('savedUsername', this.loginForm.username)
-            } else {
-              localStorage.removeItem('savedUsername')
+            if (captchaResponse.data.valid) {
+              // 验证码验证通过，进行登录
+              await this.$store.dispatch('login', {
+                username: this.loginForm.username,
+                password: this.loginForm.password,
+                captcha: this.loginForm.captcha
+              })
+              
+              // 如果勾选了记住我，保存用户名
+              if (this.loginForm.rememberMe) {
+                localStorage.setItem('savedUsername', this.loginForm.username)
+              } else {
+                localStorage.removeItem('savedUsername')
+              }
+              
+              this.$message.success('登录成功')
+              this.$router.push('/')
             }
-            
-            this.$message.success('登录成功')
-            this.$router.push('/')
           } catch (error) {
             console.error('登录失败:', error)
-            this.$message.error('登录失败，请检查用户名和密码')
+            // 刷新验证码
+            this.refreshCaptcha()
+            // 清空验证码输入框
+            this.loginForm.captcha = ''
+            
+            if (error.response && error.response.data) {
+              this.$message.error(error.response.data)
+            } else {
+              this.$message.error('登录失败，请检查用户名和密码')
+            }
           } finally {
             this.loading = false
           }
@@ -178,5 +232,25 @@ export default {
 
 .register-link a:hover {
   text-decoration: underline;
+}
+
+.captcha-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.captcha-image {
+  width: 35%;
+  height: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #dcdfe6;
+}
+
+.captcha-image:hover {
+  opacity: 0.8;
+  border-color: #409eff;
 }
 </style>
