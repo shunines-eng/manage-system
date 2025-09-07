@@ -170,7 +170,20 @@ export default {
                 // 编辑模式下不验证用户名变化
                 callback();
               } else {
-                callback();
+                // 实时校验用户名唯一性
+                axios.get('/api/users/check-username', {
+                  params: { username: value }
+                })
+                .then(response => {
+                  if (response.data.available) {
+                    callback();
+                  } else {
+                    callback(new Error('该用户名已被使用'));
+                  }
+                })
+                .catch(() => {
+                  callback(new Error('校验用户名失败，请稍后重试'));
+                });
               }
             }, trigger: 'blur' }
         ],
