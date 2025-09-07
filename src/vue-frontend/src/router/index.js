@@ -6,6 +6,7 @@ import store from '../store'
 const Login = () => import('@/views/Login.vue')
 const Register = () => import('@/views/Register.vue')
 const Home = () => import('@/views/Home.vue')
+const UserManagement = () => import('@/views/UserManagement.vue')
 
 Vue.use(Router)
 
@@ -36,6 +37,15 @@ const router = new Router({
         requiresAuth: true
       }
     },
+    {
+      path: '/user-management',
+      name: 'UserManagement',
+      component: UserManagement,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
     // 404页面
     {
       path: '*',
@@ -50,7 +60,20 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     // 检查用户是否已登录
     if (store.getters.isLoggedIn) {
-      next()
+      // 检查是否需要管理员权限
+      if (to.meta.requiresAdmin) {
+        // 检查用户是否是管理员
+        if (store.getters.userInfo?.role === 'ROLE_ADMIN') {
+          next()
+        } else {
+          // 不是管理员，重定向到首页
+          next({ name: 'Home' })
+          Vue.prototype.$message.warning('您没有管理员权限')
+        }
+      } else {
+        // 不需要管理员权限，直接通过
+        next()
+      }
     } else {
       // 未登录，重定向到登录页
       next({ name: 'Login' })

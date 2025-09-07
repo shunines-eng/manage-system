@@ -26,14 +26,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("用户不存在: " + username));
 
-        // 在实际项目中，这里可以从数据库加载用户角色
-        // 这里简单起见，为所有用户分配USER角色
+        // 使用用户实体中的角色字段
+        String userRole = user.getRole() != null ? user.getRole() : "ROLE_USER";
+        
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
                 user.getEnabled(),
                 true, true, true, // 账户未过期、凭证未过期、账户未锁定
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                Collections.singletonList(new SimpleGrantedAuthority(userRole))
         );
     }
 }

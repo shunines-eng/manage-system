@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -89,5 +90,58 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+    }
+
+    @Override
+    public User updateUser(Long userId, User userDetails) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        // 更新用户信息
+        if (userDetails.getFullName() != null) {
+            user.setFullName(userDetails.getFullName());
+        }
+        if (userDetails.getEmail() != null) {
+            // 检查新邮箱是否已被其他用户使用
+            if (!user.getEmail().equals(userDetails.getEmail()) && existsByEmail(userDetails.getEmail())) {
+                throw new RuntimeException("邮箱已被使用");
+            }
+            user.setEmail(userDetails.getEmail());
+        }
+        if (userDetails.getPhone() != null) {
+            user.setPhone(userDetails.getPhone());
+        }
+        if (userDetails.getAge() != null) {
+            user.setAge(userDetails.getAge());
+        }
+        if (userDetails.getGender() != null) {
+            user.setGender(userDetails.getGender());
+        }
+        if (userDetails.getEnabled() != null) {
+            user.setEnabled(userDetails.getEnabled());
+        }
+        
+        // 更新时间戳
+        user.setUpdatedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        userRepository.delete(user);
     }
 }

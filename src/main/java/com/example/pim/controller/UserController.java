@@ -61,6 +61,9 @@ public class UserController {
         userInfo.put("email", user.getEmail());
         userInfo.put("fullName", user.getFullName());
         userInfo.put("phone", user.getPhone());
+        userInfo.put("age", user.getAge());
+        userInfo.put("gender", user.getGender());
+        userInfo.put("role", user.getRole());
         userInfo.put("createdAt", user.getCreatedAt());
         userInfo.put("updatedAt", user.getUpdatedAt());
         userInfo.put("lastLoginTime", user.getLastLoginTime());

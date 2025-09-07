@@ -29,6 +29,15 @@ public class User {
     private String fullName;
 
     @Column
+    private Integer age;
+
+    @Column(length = 10)
+    private String gender;
+
+    @Column(length = 20)
+    private String role = "ROLE_USER"; // 默认角色为普通用户
+
+    @Column
     private Boolean enabled = true;
 
     @Column(name = "created_at")
