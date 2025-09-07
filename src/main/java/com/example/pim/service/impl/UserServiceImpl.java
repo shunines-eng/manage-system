@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,11 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    
+    // 最大登录失败次数
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    // 账户锁定时间（分钟）
+    private static final int ACCOUNT_LOCK_MINUTES = 10;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -67,12 +73,109 @@ public class UserServiceImpl implements UserService {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+            
+            // 检查账户是否已锁定
+            if (isAccountLocked(username)) {
+                // 检查锁定时间是否已过
+                unlockAccountIfExpired(user.getId());
+                // 如果仍然锁定，抛出异常
+                if (user.getAccountLocked()) {
+                    long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), 
+                            user.getLockTime().plusMinutes(ACCOUNT_LOCK_MINUTES));
+                    throw new RuntimeException("账户已被锁定，请" + minutesLeft + "分钟后再试");
+                }
+            }
+            
+            // 验证密码
             if (passwordEncoder.matches(password, user.getPassword()) && user.getEnabled()) {
+                // 登录成功，重置失败次数
+                resetLoginAttempts(user.getId());
                 return user;
+            } else {
+                // 登录失败，增加失败次数
+                incrementLoginAttempts(username);
+                throw new RuntimeException("用户名或密码错误");
             }
         }
 
         throw new RuntimeException("用户名或密码错误");
+    }
+    
+    @Override
+    public void incrementLoginAttempts(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            int attempts = user.getLoginAttempts() + 1;
+            user.setLoginAttempts(attempts);
+            
+            // 如果失败次数达到阈值，锁定账户
+            if (attempts >= MAX_LOGIN_ATTEMPTS) {
+                lockAccount(user.getId());
+            }
+            
+            userRepository.save(user);
+        }
+    }
+    
+    @Override
+    public void resetLoginAttempts(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setLoginAttempts(0);
+            user.setAccountLocked(false);
+            user.setLockTime(null);
+            userRepository.save(user);
+        }
+    }
+    
+    @Override
+    public void lockAccount(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setAccountLocked(true);
+            user.setLockTime(LocalDateTime.now());
+            userRepository.save(user);
+        }
+    }
+    
+    @Override
+    public boolean isAccountLocked(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            // 如果账户被锁定，检查锁定时间是否已过
+            if (user.getAccountLocked() && user.getLockTime() != null) {
+                LocalDateTime lockExpiryTime = user.getLockTime().plusMinutes(ACCOUNT_LOCK_MINUTES);
+                if (LocalDateTime.now().isAfter(lockExpiryTime)) {
+                    // 锁定时间已过，自动解锁
+                    unlockAccountIfExpired(user.getId());
+                    return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    @Override
+    public void unlockAccountIfExpired(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (user.getAccountLocked() && user.getLockTime() != null) {
+                LocalDateTime lockExpiryTime = user.getLockTime().plusMinutes(ACCOUNT_LOCK_MINUTES);
+                if (LocalDateTime.now().isAfter(lockExpiryTime)) {
+                    // 锁定时间已过，解锁账户并重置失败次数
+                    user.setAccountLocked(false);
+                    user.setLoginAttempts(0);
+                    user.setLockTime(null);
+                    userRepository.save(user);
+                }
+            }
+        }
     }
 
     @Override

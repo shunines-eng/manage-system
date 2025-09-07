@@ -51,6 +51,7 @@ public class AuthController {
             session.removeAttribute("captcha");
 
             // 验证用户名和密码
+            // 注意：authenticate方法内部已经处理了登录失败次数统计和账户锁定逻辑
             User user = userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
 
             // 更新最后登录时间
@@ -80,7 +81,8 @@ public class AuthController {
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("用户名或密码错误");
+            // 直接返回异常消息，包括账户锁定的具体提示
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
 

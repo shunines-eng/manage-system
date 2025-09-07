@@ -48,6 +48,18 @@ public class User {
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
+    
+    // 登录失败次数
+    @Column(name = "login_attempts")
+    private Integer loginAttempts = 0;
+    
+    // 账户锁定状态
+    @Column(name = "account_locked")
+    private Boolean accountLocked = false;
+    
+    // 账户锁定时间
+    @Column(name = "lock_time")
+    private LocalDateTime lockTime;
 
     @PreUpdate
     protected void onUpdate() {

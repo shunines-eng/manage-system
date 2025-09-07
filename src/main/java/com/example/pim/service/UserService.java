@@ -21,4 +21,11 @@ public interface UserService {
     User getUserById(Long userId);
     User updateUser(Long userId, User userDetails);
     void deleteUser(Long userId);
+    
+    // 登录失败处理相关方法
+    void incrementLoginAttempts(String username);
+    void resetLoginAttempts(Long userId);
+    void lockAccount(Long userId);
+    boolean isAccountLocked(String username);
+    void unlockAccountIfExpired(Long userId);
 }
