@@ -3,6 +3,10 @@ package com.example.pim.controller;
 import com.example.pim.entity.User;
 import com.example.pim.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,8 +24,43 @@ public class UserManagementController {
     @Autowired
     private UserService userService;
 
-    // 获取所有用户
+    // 获取所有用户（支持分页和搜索）
     @GetMapping
+    public ResponseEntity<?> getUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
+        try {
+            // 创建分页请求，默认按ID升序排序
+            Pageable pageable = PageRequest.of(
+                    page - 1, // PageRequest是从0开始的，而前端通常从1开始
+                    size,
+                    Sort.by(Sort.Direction.ASC, "id")
+            );
+            
+            Page<User> userPage;
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                userPage = userService.searchUsers(keyword, pageable);
+            } else {
+                userPage = userService.getUsersPage(pageable);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("users", userPage.getContent());
+            response.put("total", userPage.getTotalElements());
+            response.put("currentPage", page);
+            response.put("totalPages", userPage.getTotalPages());
+            response.put("pageSize", size);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("获取用户列表失败: " + e.getMessage());
+        }
+    }
+    
+    // 保持原有接口兼容性的方法
+    @GetMapping("/all")
     public ResponseEntity<?> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();

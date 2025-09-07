@@ -73,10 +73,11 @@
         <el-pagination
           background
           layout="total, sizes, prev, pager, next, jumper"
-          :total="users.length"
+          :total="totalUsers"
           :page-sizes="[10, 20, 50, 100]"
           :page-size="pageSize"
           :current-page="currentPage"
+          :pager-count="5"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
@@ -144,6 +145,8 @@ export default {
       searchQuery: '',
       currentPage: 1,
       pageSize: 10,
+      totalUsers: 0,
+      totalPages: 1,
       userModalVisible: false,
       isEditMode: false,
       formUser: {
@@ -193,16 +196,10 @@ export default {
     }
   },
   computed: {
+    // 前端分页已不再需要，因为后端已经处理了分页
+    // 保留此计算属性以保持兼容性
     filteredUsers() {
-      if (!this.searchQuery) {
-        return this.users.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize)
-      }
-      const query = this.searchQuery.toLowerCase()
-      const filtered = this.users.filter(user => 
-        user.username.toLowerCase().includes(query) || 
-        user.email.toLowerCase().includes(query)
-      )
-      return filtered.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize)
+      return this.users
     }
   },
   mounted() {
@@ -211,8 +208,16 @@ export default {
   methods: {
     async loadUsers() {
       try {
-        const response = await axios.get('/api/admin/users')
+        const response = await axios.get('/api/admin/users', {
+          params: {
+            page: this.currentPage,
+            size: this.pageSize,
+            keyword: this.searchQuery
+          }
+        })
         this.users = response.data.users
+        this.totalUsers = response.data.total
+        this.totalPages = response.data.totalPages
       } catch (error) {
         this.$message.error('获取用户列表失败：' + (error.response?.data || error.message))
       }

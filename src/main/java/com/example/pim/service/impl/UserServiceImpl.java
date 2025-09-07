@@ -4,6 +4,8 @@ import com.example.pim.entity.User;
 import com.example.pim.repository.UserRepository;
 import com.example.pim.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -95,6 +97,36 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    @Override
+    public Page<User> getUsersPage(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
+    @Override
+    public Page<User> searchUsers(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getUsersPage(pageable);
+        }
+        // 实际项目中应该在UserRepository中添加search方法，这里为了演示简单处理
+        // 注意：这不是一个高效的实现，只是为了演示功能
+        List<User> allUsers = userRepository.findAll();
+        List<User> filteredUsers = allUsers.stream()
+                .filter(user -> user.getUsername().toLowerCase().contains(keyword.toLowerCase()) ||
+                        user.getFullName().toLowerCase().contains(keyword.toLowerCase()) ||
+                        user.getEmail().toLowerCase().contains(keyword.toLowerCase()))
+                .toList();
+        
+        // 手动实现分页（实际项目中应该使用数据库查询）
+        int start = Math.min((int) pageable.getOffset(), filteredUsers.size());
+        int end = Math.min(start + pageable.getPageSize(), filteredUsers.size());
+        
+        return new org.springframework.data.domain.PageImpl<>(
+                filteredUsers.subList(start, end),
+                pageable,
+                filteredUsers.size()
+        );
     }
 
     @Override
