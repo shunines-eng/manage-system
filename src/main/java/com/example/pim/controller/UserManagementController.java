@@ -132,6 +132,16 @@ public class UserManagementController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails, HttpServletRequest request) {
         try {
+            // 获取当前登录的管理员信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentAdminUsername = authentication.getName();
+            User currentAdmin = userService.findByUsername(currentAdminUsername);
+            
+            // 验证当前登录的管理员是否存在
+            if (currentAdmin == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未授权访问");
+            }
+            
             // 防止更新敏感信息
             userDetails.setId(id); // 确保ID一致
             userDetails.setPassword(null); // 不允许直接修改密码
@@ -171,6 +181,16 @@ public class UserManagementController {
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody User user, HttpServletRequest request) {
         try {
+            // 获取当前登录的管理员信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentAdminUsername = authentication.getName();
+            User currentAdmin = userService.findByUsername(currentAdminUsername);
+            
+            // 验证当前登录的管理员是否存在
+            if (currentAdmin == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未授权访问");
+            }
+            
             // 检查用户名是否已存在
             if (userService.existsByUsername(user.getUsername())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("用户名已存在");
@@ -214,6 +234,16 @@ public class UserManagementController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
         try {
+            // 获取当前登录的管理员信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentAdminUsername = authentication.getName();
+            User currentAdmin = userService.findByUsername(currentAdminUsername);
+            
+            // 验证当前登录的管理员是否存在
+            if (currentAdmin == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未授权访问");
+            }
+            
             // 先获取用户信息用于日志记录
             User user = userService.getUserById(id);
             String username = user != null ? user.getUsername() : "未知用户";
@@ -248,6 +278,16 @@ public class UserManagementController {
     public ResponseEntity<?> updateUserPassword(@PathVariable Long id, @RequestBody PasswordUpdateRequest request, 
                                                HttpServletRequest servletRequest) {
         try {
+            // 获取当前登录的管理员信息
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentAdminUsername = authentication.getName();
+            User currentAdmin = userService.findByUsername(currentAdminUsername);
+            
+            // 验证当前登录的管理员是否存在
+            if (currentAdmin == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("未授权访问");
+            }
+            
             if (request.getNewPassword() == null || request.getNewPassword().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("新密码不能为空");
             }
