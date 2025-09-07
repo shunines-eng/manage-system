@@ -304,10 +304,15 @@ export default {
       }
     },
     showDeleteConfirm(userId) {
-      this.$confirm('此操作将永久删除该用户，是否继续？', '提示', {
-        confirmButtonText: '确定',
+      // 获取要删除的用户信息
+      const userToDelete = this.users.find(user => user.id === userId);
+      const username = userToDelete ? userToDelete.username : '该用户';
+      
+      this.$confirm(`此操作将永久删除用户【${username}】，删除后数据无法恢复，是否继续？`, '警告', {
+        confirmButtonText: '确定删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'danger',
+        center: true
       }).then(async () => {
         try {
           const response = await axios.delete(`/api/admin/users/${userId}`)
@@ -317,7 +322,7 @@ export default {
           this.$message.error('删除失败：' + (error.response?.data || error.message))
         }
       }).catch(() => {
-        this.$message.info('已取消删除')
+        this.$message.info('已取消删除操作')
       })
     }
   }
