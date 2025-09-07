@@ -91,7 +91,7 @@
     >
       <el-form ref="userForm" :model="formUser" :rules="userRules" label-width="100px">
         <el-form-item label="用户名" prop="username" :disabled="isEditMode">
-          <el-input v-model="formUser.username" placeholder="请输入用户名" />
+          <el-input v-model="formUser.username" placeholder="请输入用户名" readonly />
         </el-form-item>
         <el-form-item label="姓名" prop="fullName">
           <el-input v-model="formUser.fullName" placeholder="请输入姓名" />
@@ -161,7 +161,15 @@ export default {
       userRules: {
         username: [
           { required: true, message: '请输入用户名', trigger: 'blur' },
-          { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+          { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' },
+          { validator: (rule, value, callback) => {
+              if (this.isEditMode) {
+                // 编辑模式下不验证用户名变化
+                callback();
+              } else {
+                callback();
+              }
+            }, trigger: 'blur' }
         ],
         fullName: [
           { required: true, message: '请输入姓名', trigger: 'blur' },
