@@ -121,29 +121,30 @@ export default {
         if (valid) {
           this.loading = true
           try {
-            // 先验证验证码
-            const captchaResponse = await this.$axios.post('/api/captcha/validate', {
-              code: this.loginForm.captcha
+            // 直接进行登录，验证码会在后端校验
+            const response = await this.$axios.post('/auth/login', {
+              username: this.loginForm.username,
+              password: this.loginForm.password,
+              captcha: this.loginForm.captcha
             })
             
-            if (captchaResponse.data.valid) {
-              // 验证码验证通过，进行登录
-              await this.$store.dispatch('login', {
-                username: this.loginForm.username,
-                password: this.loginForm.password,
-                captcha: this.loginForm.captcha
-              })
-              
-              // 如果勾选了记住我，保存用户名
-              if (this.loginForm.rememberMe) {
-                localStorage.setItem('savedUsername', this.loginForm.username)
-              } else {
-                localStorage.removeItem('savedUsername')
-              }
-              
-              this.$message.success('登录成功')
-              this.$router.push('/')
+            // 手动处理登录成功逻辑
+            const { token, userId, username, email, fullName } = response.data
+            const userInfo = { id: userId, username, email, fullName }
+            
+            // 更新 store 状态
+            this.$store.commit('SET_TOKEN', token)
+            this.$store.commit('SET_USER_INFO', userInfo)
+            
+            // 如果勾选了记住我，保存用户名
+            if (this.loginForm.rememberMe) {
+              localStorage.setItem('savedUsername', this.loginForm.username)
+            } else {
+              localStorage.removeItem('savedUsername')
             }
+            
+            this.$message.success('登录成功')
+            this.$router.push('/')
           } catch (error) {
             console.error('登录失败:', error)
             // 刷新验证码
