@@ -243,6 +243,18 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
+        // 更新用户名（如果提供了新用户名）
+        if (userDetails.getUsername() != null && !userDetails.getUsername().trim().isEmpty()) {
+            // 检查新用户名是否与当前用户名不同
+            if (!user.getUsername().equals(userDetails.getUsername())) {
+                // 检查新用户名是否已被其他用户使用
+                if (existsByUsername(userDetails.getUsername())) {
+                    throw new RuntimeException("用户名已被使用");
+                }
+                user.setUsername(userDetails.getUsername());
+            }
+        }
+
         // 更新用户信息
         if (userDetails.getFullName() != null) {
             user.setFullName(userDetails.getFullName());
