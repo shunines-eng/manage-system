@@ -53,17 +53,28 @@
 - `boolean existsByUsername(String username)`: 检查用户名是否存在
 - `boolean existsByEmail(String email)`: 检查邮箱是否存在
 - `User authenticate(String username, String password)`: 用户认证
+- `User updateLastLoginTime(Long userId)`: 更新最后登录时间
 - `void updatePassword(Long userId, String newPassword)`: 更新密码
+- `List<User> getAllUsers()`: 获取所有用户
+- `Page<User> getUsersPage(Pageable pageable)`: 分页获取用户
+- `Page<User> searchUsers(String keyword, Pageable pageable)`: 搜索用户
+- `User getUserById(Long userId)`: 根据ID获取用户
+- `User updateUser(Long userId, User userDetails)`: 更新用户信息
+- `void deleteUser(Long userId)`: 删除用户
 - `void incrementLoginAttempts(String username)`: 增加登录尝试次数
 - `void resetLoginAttempts(Long userId)`: 重置登录尝试次数
 - `void lockAccount(Long userId)`: 锁定账户
 - `boolean isAccountLocked(String username)`: 检查账户是否锁定
 - `void unlockAccountIfExpired(Long userId)`: 如果过期则解锁账户
+- `void createVerificationToken(User user, String token)`: 创建验证令牌
+- `boolean validateVerificationToken(String token)`: 验证令牌有效性
+- `void sendVerificationEmail(User user, String token)`: 发送验证邮件
 
 **AdminOperationLogService 接口**:
-- `void logOperation()`: 记录操作日志
-- `Page<AdminOperationLog> findLogs()`: 查询日志
-- `Map<String, Long> getLogStatistics()`: 获取日志统计
+- `void logOperation(Authentication authentication, String operationType, String objectType, Long objectId, String objectName, boolean isSuccess, HttpServletRequest request)`: 记录操作日志
+- `void logCreate(Authentication authentication, String objectType, Long objectId, String objectName, boolean isSuccess, HttpServletRequest request)`: 记录创建操作
+- `Page<AdminOperationLog> findLogs(String adminUsername, String operationType, String objectType, LocalDateTime startTime, LocalDateTime endTime, Boolean success, Pageable pageable)`: 查询日志
+- `Map<String, Long> getLogStatistics(String adminUsername, LocalDateTime startTime, LocalDateTime endTime)`: 获取日志统计
 - `List<String> getDistinctOperationTypes()`: 获取所有操作类型
 - `List<String> getDistinctObjectTypes()`: 获取所有对象类型
 
@@ -163,6 +174,20 @@ admin_operation_logs
     返回 CaptchaResult(code, base64Image)
 ```
 
+### 3.4 JWT 认证过滤器算法
+
+**伪代码**:
+```
+函数 doFilterInternal(request, response, filterChain):
+    从请求头获取JWT令牌
+    如果令牌存在且有效:
+        从令牌中提取用户名
+        加载用户详情
+        创建认证令牌
+        设置安全上下文
+    继续过滤器链
+```
+
 ## 4. 接口规范
 
 ### 4.1 REST API 设计原则
@@ -185,6 +210,8 @@ admin_operation_logs
 | DELETE | /api/admin/users/{id}   | 删除用户         | ROLE_ADMIN |
 | GET    | /api/admin/logs         | 获取操作日志     | ROLE_ADMIN |
 | GET    | /api/admin/logs/statistics | 获取日志统计 | ROLE_ADMIN |
+| POST   | /auth/register             | 用户注册     | 无         |
+| POST   | /auth/login                | 用户登录     | 无         |
 
 ### 4.3 请求/响应示例
 
@@ -236,6 +263,9 @@ admin_operation_logs
 - 使用 Spring 的 @ControllerAdvice 进行全局异常处理
 - 自定义异常类区分业务异常和系统异常
 - 记录异常日志便于排查问题
+- 验证失败时返回具体的错误信息
+- 权限不足时返回 403 状态码
+- JWT 令牌无效时返回 401 状态码
 
 ### 5.3 错误响应格式
 
