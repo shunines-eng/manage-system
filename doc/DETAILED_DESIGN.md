@@ -210,8 +210,6 @@ admin_operation_logs
 | DELETE | /api/admin/users/{id}   | 删除用户         | ROLE_ADMIN |
 | GET    | /api/admin/logs         | 获取操作日志     | ROLE_ADMIN |
 | GET    | /api/admin/logs/statistics | 获取日志统计 | ROLE_ADMIN |
-| POST   | /auth/register             | 用户注册     | 无         |
-| POST   | /auth/login                | 用户登录     | 无         |
 
 ### 4.3 请求/响应示例
 
