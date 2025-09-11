@@ -25,10 +25,16 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    // 检查用户名是否可用
+    // 检查用户名是否可用（支持排除当前用户ID）
     @GetMapping("/check-username")
-    public ResponseEntity<?> checkUsername(@RequestParam String username) {
-        boolean available = !userService.existsByUsername(username);
+    public ResponseEntity<?> checkUsername(@RequestParam String username, @RequestParam(required = false) Long excludeUserId) {
+        boolean available;
+        Optional<User> existingUser = userService.findByUsername(username);
+        if (excludeUserId != null) {
+            available = !existingUser.isPresent() || existingUser.get().getId().equals(excludeUserId);
+        } else {
+            available = !existingUser.isPresent();
+        }
         Map<String, Boolean> response = new HashMap<>();
         response.put("available", available);
         return ResponseEntity.ok(response);
