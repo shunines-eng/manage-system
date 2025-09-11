@@ -110,16 +110,35 @@ public class AuthController {
             // 注册用户
             User registeredUser = userService.registerUser(user);
 
+            // 生成验证令牌并发送验证邮件
+            String verificationToken = java.util.UUID.randomUUID().toString();
+            userService.createVerificationToken(registeredUser, verificationToken);
+            userService.sendVerificationEmail(registeredUser, verificationToken);
+
             // 构建响应对象
             Map<String, Object> response = new HashMap<>();
             response.put("userId", registeredUser.getId());
             response.put("username", registeredUser.getUsername());
             response.put("email", registeredUser.getEmail());
-            response.put("message", "注册成功");
+            response.put("message", "注册成功，请检查您的邮箱完成验证");
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam String token) {
+        try {
+            boolean isValid = userService.validateVerificationToken(token);
+            if (isValid) {
+                return ResponseEntity.ok("邮箱验证成功");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("验证链接无效或已过期");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("验证过程中出现错误");
         }
     }
 

@@ -179,6 +179,37 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void createVerificationToken(User user, String token) {
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+    }
+
+    @Override
+    public boolean validateVerificationToken(String token) {
+        Optional<User> userOptional = userRepository.findByVerificationToken(token);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (user.getVerificationTokenExpiry().isAfter(LocalDateTime.now())) {
+                user.setEmailVerified(true);
+                user.setVerificationToken(null);
+                user.setVerificationTokenExpiry(null);
+                userRepository.save(user);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void sendVerificationEmail(User user, String token) {
+        // 在实际项目中，这里应该发送验证邮件
+        // 由于邮件配置较复杂，这里仅打印日志
+        System.out.println("Sending verification email to: " + user.getEmail());
+        System.out.println("Verification link: http://localhost:8080/api/auth/verify-email?token=" + token);
+    }
+
+    @Override
     public User updateLastLoginTime(Long userId) {
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isPresent()) {

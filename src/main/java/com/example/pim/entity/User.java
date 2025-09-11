@@ -61,6 +61,18 @@ public class User {
     @Column(name = "lock_time")
     private LocalDateTime lockTime;
 
+    // 邮箱验证状态
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    // 邮箱验证令牌
+    @Column(name = "verification_token", length = 64)
+    private String verificationToken;
+
+    // 验证令牌过期时间
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry;
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

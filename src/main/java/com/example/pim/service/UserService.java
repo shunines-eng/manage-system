@@ -28,4 +28,9 @@ public interface UserService {
     void lockAccount(Long userId);
     boolean isAccountLocked(String username);
     void unlockAccountIfExpired(Long userId);
+    
+    // 邮箱验证相关方法
+    void createVerificationToken(User user, String token);
+    boolean validateVerificationToken(String token);
+    void sendVerificationEmail(User user, String token);
 }
