@@ -88,7 +88,7 @@
     <el-dialog
       :title="isEditMode ? '编辑用户' : '添加用户'"
       :visible.sync="userModalVisible"
-      width="50%
+      width="50%"
     >
       <el-form ref="userForm" :model="formUser" :rules="userRules" label-width="100px">
         <el-form-item label="用户名" prop="username">
