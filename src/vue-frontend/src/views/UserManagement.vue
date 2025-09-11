@@ -166,14 +166,17 @@ export default {
           { required: true, message: '请输入用户名', trigger: 'blur' },
           { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' },
           { validator: (rule, value, callback) => {
-              if (this.isEditMode) {
-                // 编辑模式下不验证用户名变化
+              if (!value) {
                 callback();
-              } else {
-                // 实时校验用户名唯一性
-                axios.get('/api/users/check-username', {
-                  params: { username: value }
-                })
+                return;
+              }
+              const params = { username: value };
+              // 编辑模式下排除当前用户ID
+              if (this.isEditMode && this.formUser.id) {
+                params.excludeUserId = this.formUser.id;
+              }
+              // 实时校验用户名唯一性
+              axios.get('/api/users/check-username', { params })
                 .then(response => {
                   if (response.data.available) {
                     callback();
@@ -184,7 +187,6 @@ export default {
                 .catch(() => {
                   callback(new Error('校验用户名失败，请稍后重试'));
                 });
-              }
             }, trigger: 'blur' }
         ],
         fullName: [
